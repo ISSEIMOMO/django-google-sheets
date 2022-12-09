@@ -19,7 +19,6 @@ class Sheets:
         url = f'{settings.BASE_DIR}/service_account.json'
         gc = gspread.service_account(url)
         self.sh = gc.open_by_key(settings.SHEETS_KEY)
-        self.worksheet
     def ler(self,se):
         add, worksheet = addicionar(se)
         worksheet = self.sh.worksheet(worksheet)
