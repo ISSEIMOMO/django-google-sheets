@@ -19,14 +19,11 @@ class Sheets:
         url = f'{settings.BASE_DIR}/service_account.json'
         gc = gspread.service_account(url)
         self.sh = gc.open_by_key(settings.SHEETS_KEY)
-        self.worksheet = self.sh.worksheet(settings.SHEETS_WORK)
-        self.SHEETS_WORK = settings.SHEETS_WORK
-    def ler(self,range=None,worksheet=None):
-        if worksheet == None:
-            return self.worksheet.get_all_values()
-        else:
-            worksheet = self.sh.worksheet(worksheet)
-            return worksheet.get_all_values()
+        self.worksheet
+    def ler(self,se):
+        add, worksheet = addicionar(se)
+        worksheet = self.sh.worksheet(worksheet)
+        return worksheet.get_all_values()
 
 
     def lertabmod(self,se):
@@ -55,7 +52,10 @@ class Sheets:
         for i in itens:
             if not (i in itensfiltrados):
                 itensfiltrados.append(i)
-        #self.worksheet.delete_rows(1, len(self.worksheet.col_values(1)))
+
+        ap = self.sh.worksheet(worksheet)
+        ap.worksheet.delete_rows(1, len(ap.col_values(1)))
+
         for i in itensfiltrados:
             ad = str(i).split("[")
             ad = str(ad[1]).split("]")
@@ -71,12 +71,8 @@ class Sheets:
         if self.verificarigualdade(se) == True:
             print("TRUE")
             add, worksheet = addicionar(se)
-            if worksheet == None:
-                self.sh.values_append(f'{self.SHEETS_WORK}!A1', params={'valueInputOption': 'RAW'}, body={'values': [add]})
-            else:
-                self.sh.values_append(f'{worksheet}!A1', params={'valueInputOption': 'RAW'}, body={'values': [add]})
-                return self.ler(worksheet=worksheet)
-            return self.ler()
+            self.sh.values_append(f'{worksheet}!A1', params={'valueInputOption': 'RAW'}, body={'values': [add]})
+            return self.ler(se)
 
     def updata(self,se,antigo=None,worksheet=None):
         if self.verificarigualdade(se) == True:
@@ -84,11 +80,8 @@ class Sheets:
             add, worksheet = addicionar(se)
             x = 1
             y = None
-            if worksheet == None:
-                pks = self.worksheet.col_values(1)
-            else:
-                worksheet = self.sh.worksheet(worksheet)
-                pks = worksheet.col_values(1)
+            worksheet = self.sh.worksheet(worksheet)
+            pks = worksheet.col_values(1)
             for i in pks:
                 if int(i) == int(antigo):
                     y = x
@@ -106,11 +99,8 @@ class Sheets:
         add, worksheet = addicionar(se)
         x = 1
         y = None
-        if worksheet == None:
-            pks = self.worksheet.col_values(1)
-        else:
-            worksheet = self.sh.worksheet(worksheet)
-            pks = worksheet.col_values(1)
+        worksheet = self.sh.worksheet(worksheet)
+        pks = worksheet.col_values(1)
         for i in pks:
             if int(i) == int(antigo):
                 y = x
@@ -118,7 +108,7 @@ class Sheets:
         if y == None:
             return False
         else:
-            self.worksheet.delete_row(y)
+            worksheet.delete_row(y)
             return True
 
     def add(self, se):
