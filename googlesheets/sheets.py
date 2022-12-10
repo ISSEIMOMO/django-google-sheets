@@ -1,8 +1,8 @@
 import gspread
 from django.conf import settings
-import os
 import json
 from django.core import serializers
+
 
 def addicionar(self):
     adr = [self.pk,str(serializers.serialize('json', [self]))]
@@ -15,18 +15,19 @@ def addicionar(self):
 
 class Sheets:
 
+
     def __init__(self):
         url = f'{settings.BASE_DIR}/service_account.json'
         gc = gspread.service_account(url)
         self.sh = gc.open_by_key(settings.SHEETS_KEY)
-    def ler(self,se):
+
+    def __ler(self,se):
         add, worksheet = addicionar(se)
         worksheet = self.sh.worksheet(worksheet)
         return worksheet.get_all_values()
 
-
     def lertabmod(self,se):
-        ws = str(se)
+        ws = se.lower()
         worksheet = self.sh.worksheet(ws)
         lis = []
         for li in worksheet.col_values(2):
@@ -37,14 +38,11 @@ class Sheets:
         lista = lis.replace("['",'[')
         lista = lista.replace("']",']')
         lista = lista.replace("'",'')
-        return json.loads(lista)
+        return lista
 
-
-    def verificarigualdade(self,se,worksheet=None):
-        antigo = se.pk
+    def __verificarigualdade(self,se):
         add, worksheet = addicionar(se)
         wk = worksheet
-        x = 1
         y = False
         worksheet = self.sh.worksheet(worksheet)
         itens = worksheet.col_values(2)
@@ -52,16 +50,8 @@ class Sheets:
         for i in itens:
             if not (i in itensfiltrados):
                 itensfiltrados.append(i)
-
         self.sh.del_worksheet(worksheet)
-        self.sh.add_worksheet(title=wk, rows=1000, cols=2)
-        while y != True:
-            try:
-                addicionar(se)
-                y = True
-            except:
-                pass
-        y = False
+        self.sh.add_worksheet(title=wk.lower(), rows=1000, cols=2)
         for i in itensfiltrados:
             ad = str(i).split("[")
             ad = str(ad[1]).split("]")
@@ -72,16 +62,14 @@ class Sheets:
             y = True
         return y
 
-    def adicionar(self,se):
-        print(self.verificarigualdade(se))
-        if self.verificarigualdade(se) == True:
-            print("TRUE")
+    def __adicionar(self,se):
+        if self.__verificarigualdade(se) == True:
             add, worksheet = addicionar(se)
             self.sh.values_append(f'{worksheet}!A1', params={'valueInputOption': 'RAW'}, body={'values': [add]})
-            return self.ler(se)
+            return self.__ler(se)
 
-    def updata(self,se,antigo=None,worksheet=None):
-        if self.verificarigualdade(se) == True:
+    def __updata(self,se):
+        if self.__verificarigualdade(se) == True:
             antigo = se.pk
             add, worksheet = addicionar(se)
             x = 1
@@ -93,31 +81,50 @@ class Sheets:
                     y = x
                 x += 1
             if y == None:
-                self.adicionar(add,worksheet)
+                self.__adicionar(add,worksheet)
                 return False
             else:
                 self.worksheet.update(f'A{y}', [add])
                 return True
 
-    def delete(self,se,worksheet=None):
-        self.restaurar(se)
-        antigo = se.pk
-        add, worksheet = addicionar(se)
-        x = 1
-        y = None
-        worksheet = self.sh.worksheet(worksheet)
-        pks = worksheet.col_values(1)
-        for i in pks:
-            if int(i) == int(antigo):
-                y = x
-            x += 1
-        if y == None:
-            return False
-        else:
-            worksheet.delete_row(y)
+    def __existe(self,se):
+        try:
+            add, worksheet = addicionar(se)
+            worksheet = self.sh.worksheet(worksheet)
+            pks = worksheet.col_values(1)
             return True
+        except:
+            try:
+                worksheet = self.sh.worksheet(se)
+                pks = worksheet.col_values(1)
+                return True
+            except:
+                try:
+                    add, worksheet = addicionar(se)
+                    self.sh.add_worksheet(title=worksheet.lower(), rows=1000, cols=2)
+                except:
+                    self.sh.add_worksheet(title=se.lower(), rows=1000, cols=2)
+                return False
+
+    def delete(self,se):
+        if self.__existe(se) == True:
+            self.restaurar(se)
+            antigo = se.pk
+            add, worksheet = addicionar(se)
+            x = 1
+            y = None
+            worksheet = self.sh.worksheet(worksheet)
+            pks = worksheet.col_values(1)
+            for i in pks:
+                if int(i) == int(antigo):
+                    worksheet.delete_row(y)
+            return True
+        else:
+            return False
 
     def add(self, se):
+        self.restaurar(se)
+        self.__existe(se)
         salvar = None
         if se.pk:
             salvar = 1
@@ -126,15 +133,24 @@ class Sheets:
         self.salvar = salvar
 
     def enviar(self, se):
-        self.restaurar(se)
         if self.salvar == 1:
-            self.updata(se)
+            self.__updata(se)
         elif self.salvar == 0:
-            self.adicionar(se)
-
+            self.__adicionar(se)
 
     def restaurar(self, se):
-        add, worksheet = addicionar(se)
-        serializers.deserialize("json", self.lertabmod(worksheet), ignorenonexistent=True)
+        try:
+            se = se.lower()
+            self.__existe(se)
+            obj_generator = serializers.deserialize("json", self.lertabmod(se), ignorenonexistent=True)
+            for obj in obj_generator:
+                obj.save()
+            return self.lertabmod(se)
+        except:
+            add, worksheet = addicionar(se)
+            obj_generator = serializers.deserialize("json", self.lertabmod(worksheet), ignorenonexistent=True)
+            for obj in obj_generator:
+                obj.save()
+            return self.lertabmod(worksheet)
 
 google_sheets = Sheets()
