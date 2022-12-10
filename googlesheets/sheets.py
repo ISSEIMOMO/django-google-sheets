@@ -43,6 +43,7 @@ class Sheets:
     def verificarigualdade(self,se,worksheet=None):
         antigo = se.pk
         add, worksheet = addicionar(se)
+        wk = worksheet
         x = 1
         y = False
         worksheet = self.sh.worksheet(worksheet)
@@ -52,15 +53,16 @@ class Sheets:
             if not (i in itensfiltrados):
                 itensfiltrados.append(i)
 
-        ap = self.sh.worksheet(worksheet)
-        ap.worksheet.delete_rows(1, len(ap.col_values(1)))
+        self.sh.del_worksheet(worksheet)
+        self.sh.add_worksheet(title=wk, rows=1000, cols=2)
+        while != True:
 
         for i in itensfiltrados:
             ad = str(i).split("[")
             ad = str(ad[1]).split("]")
             ad = json.loads(str(ad[0]))
             adr = [ad['pk'], i]
-            self.sh.values_append(f'{worksheet}!A1', params={'valueInputOption': 'RAW'}, body={'values': [adr]})
+            self.sh.values_append(f'{worksheet}!A{x}', params={'valueInputOption': 'RAW'}, body={'values': [adr]})
         if not (add in itensfiltrados):
             y = True
         return y
