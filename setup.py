@@ -4,7 +4,7 @@ with open("README.md", "r") as arq:
     readme = arq.read()
 
 setup(name='django-google-sheets',
-    version='0.0.1',
+    version='0.0.7',
     license='MIT License',
     author='issei momonge',
     long_description=readme,
