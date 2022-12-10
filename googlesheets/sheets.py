@@ -55,14 +55,19 @@ class Sheets:
 
         self.sh.del_worksheet(worksheet)
         self.sh.add_worksheet(title=wk, rows=1000, cols=2)
-        while != True:
-
+        while y != True:
+            try:
+                addicionar(se)
+                y = True
+            except:
+                pass
+        y = False
         for i in itensfiltrados:
             ad = str(i).split("[")
             ad = str(ad[1]).split("]")
             ad = json.loads(str(ad[0]))
             adr = [ad['pk'], i]
-            self.sh.values_append(f'{worksheet}!A{x}', params={'valueInputOption': 'RAW'}, body={'values': [adr]})
+            self.sh.values_append(f'{wk}!A1', params={'valueInputOption': 'RAW'}, body={'values': [adr]})
         if not (add in itensfiltrados):
             y = True
         return y
