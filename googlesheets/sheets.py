@@ -84,7 +84,7 @@ class Sheets:
                 self.__adicionar(add,worksheet)
                 return False
             else:
-                self.worksheet.update(f'A{y}', [add])
+                worksheet.update(f'A{y}', [add])
                 return True
 
     def __existe(self,se):
