@@ -6,11 +6,19 @@ from django.core import serializers
 
 def addicionar(self):
     adr = [self.pk,str(serializers.serialize('json', [self]))]
-    ad = str(serializers.serialize('json', [self])).split("[")
-    ad = str(ad[1]).split("]")
-    ad = json.loads(str(ad[0]))
-    ad = str(ad['model']).split('.')
-    return adr, str(ad[1])
+    try:
+        ad = str(serializers.serialize('json', [self])).split("[")
+        ad = str(ad[1]).split("]")
+        ad = json.loads(str(ad[0]))
+        ad = str(ad['model']).split('.')
+    except:
+        ad = adr[1]
+        ad = str(ad).replace('[{','{')
+        ad = ad.replace('}]','}')
+        ad = json.loads(ad)
+        ad = str(ad['model']).split('.')
+    ad = str(ad[1])
+    return adr, ad
 
 
 class Sheets:
@@ -69,23 +77,29 @@ class Sheets:
             return self.__ler(se)
 
     def __updata(self,se):
-        if self.__verificarigualdade(se) == True:
-            antigo = se.pk
-            add, worksheet = addicionar(se)
-            x = 1
-            y = None
-            worksheet = self.sh.worksheet(worksheet)
-            pks = worksheet.col_values(1)
-            for i in pks:
-                if int(i) == int(antigo):
-                    y = x
-                x += 1
-            if y == None:
-                self.__adicionar(add,worksheet)
-                return False
-            else:
-                worksheet.update(f'A{y}', [add])
-                return True
+        try:
+            if self.__verificarigualdade(se) == True:
+                antigo = se.pk
+                add, wk = addicionar(se)
+                x = 1
+                y = None
+                worksheet = self.sh.worksheet(wk)
+                pks = worksheet.col_values(1)
+                for i in pks:
+                    if int(i) == int(antigo):
+                        y = x
+                    x += 1
+                if y == None:
+                    print(add)
+                    print(wk)
+                    self.__adicionar(se)
+                    return False
+                else:
+                    worksheet.update(f'A{y}', [add])
+                    return True
+        except:
+            self.__adicionar(se)
+            return False
 
     def __existe(self,se):
         try:
@@ -112,19 +126,19 @@ class Sheets:
             antigo = se.pk
             add, worksheet = addicionar(se)
             x = 1
-            y = None
             worksheet = self.sh.worksheet(worksheet)
             pks = worksheet.col_values(1)
             for i in pks:
                 if int(i) == int(antigo):
-                    worksheet.delete_row(y)
+                    worksheet.delete_row(x)
+                x = x+1
             return True
         else:
             return False
 
     def add(self, se):
-        self.restaurar(se)
         self.__existe(se)
+        self.restaurar(se)
         salvar = None
         if se.pk:
             salvar = 1
@@ -149,8 +163,11 @@ class Sheets:
         except:
             add, worksheet = addicionar(se)
             obj_generator = serializers.deserialize("json", self.lertabmod(worksheet), ignorenonexistent=True)
-            for obj in obj_generator:
-                obj.save()
+            try:
+                for obj in obj_generator:
+                    obj.save()
+            except:
+                pass
             return self.lertabmod(worksheet)
 
 google_sheets = Sheets()
